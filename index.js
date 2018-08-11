@@ -10,10 +10,7 @@ class GStore extends BaseStore {
         super(config);
         options = config;
 
-        var gcs = storage({
-            projectId: options.projectId,
-            keyFilename: options.key
-        });
+        var gcs = storage();
         this.bucket = gcs.bucket(options.bucket);
         this.assetDomain = options.assetDomain || `${options.bucket}.storage.googleapis.com`;
         // only set insecure from config if assetDomain is set
@@ -34,7 +31,7 @@ class GStore extends BaseStore {
         return new Promise((resolve, reject) => {
             this.getUniqueFileName(image, targetDir).then(targetFilename => {
                 var opts = {
-                    destination: targetDir + targetFilename,
+                    destination: targetFilename,
                     metadata: {
                         cacheControl: `public, max-age=${this.maxAge}`
                     },
@@ -42,7 +39,7 @@ class GStore extends BaseStore {
                 };
                 return this.bucket.upload(image.path, opts);
             }).then(function (data) {
-                return resolve(googleStoragePath + targetDir + targetFilename);
+                return resolve(googleStoragePath + targetFilename);
             }).catch(function (e) {
                 return reject(e);
             });

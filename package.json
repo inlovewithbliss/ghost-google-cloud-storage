@@ -1,5 +1,5 @@
 {
-  "name": "inlovewithbliss-ghost-google-cloud-storage",
+  "name": "ghost-google-cloud-storage",
   "version": "1.2.0",
   "description": "A simple plugin to add Google Cloud Storage support for Ghost Blog",
   "main": "index.js",
@@ -20,9 +20,9 @@
   "author": "Thomas Büchi Sagredo <thombuchi@gmail.com>)",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/thombuchi/ghost-google-cloud-storage/issues"
+    "url": "https://github.com/inlovewithbliss/ghost-google-cloud-storage/issues"
   },
-  "homepage": "https://github.com/thombuchi/ghost-google-cloud-storage",
+  "homepage": "https://github.com/inlovewithbliss/ghost-google-cloud-storage",
   "dependencies": {
     "@google-cloud/storage": "^1.7.0",
     "bluebird": "^3.1.1",

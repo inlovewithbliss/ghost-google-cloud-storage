@@ -1,6 +1,6 @@
 'use strict';
 
-var storage     = require('@google-cloud/storage'),
+var storage     = require('@google-cloud/storage')(),
     BaseStore   = require('ghost-storage-base'),
     Promise     = require('bluebird'),
     options     = {};
@@ -10,13 +10,8 @@ class GStore extends BaseStore {
         super(config);
         options = config;
 
-        var gcs = storage();
-        this.bucket = gcs.bucket(options.bucket);
-        this.assetDomain = options.assetDomain || `${options.bucket}.storage.googleapis.com`;
-        // only set insecure from config if assetDomain is set
-        if(options.hasOwnProperty('assetDomain')){
-            this.insecure = options.insecure;
-        }
+        this.bucket = storage.bucket(options.bucket);
+        this.assetDomain = options.assetDomain || `storage.googleapis.com/${options.bucket}`;
         // default max-age is 3600 for GCS, override to something more useful
         this.maxAge = options.maxAge || 2678400;
     }
@@ -24,26 +19,30 @@ class GStore extends BaseStore {
     save(image) {
         if (!options) return Promise.reject('google cloud storage is not configured');
 
-        var targetDir = this.getTargetDir(),
-        googleStoragePath = `http${this.insecure?'':'s'}://${this.assetDomain}/`,
-        targetFilename;
+        var targetDir = this.getTargetDir()
 
         return new Promise((resolve, reject) => {
-            this.getUniqueFileName(image, targetDir).then(targetFilename => {
-                var opts = {
-                    destination: targetFilename,
-                    metadata: {
-                        cacheControl: `public, max-age=${this.maxAge}`
-                    },
-                    public: true
-                };
-                return this.bucket.upload(image.path, opts);
-            }).then(function (data) {
-                return resolve(googleStoragePath + targetFilename);
-            }).catch(function (e) {
-                return reject(e);
-            });
-        });
+            var opts = {
+                destination: targetDir + '/' + this.getUniqueFileName(image, targetDir),
+                metadata: {
+                    cacheControl: `public, max-age=${this.maxAge}`
+                },
+                public: true
+            };
+            this.bucket.upload(image.path, opts, (err, file) => {
+                if(err) {
+                    return reject(err);
+                }
+                file.getMetadata((err, metadata) => {
+                    if(err) {
+                        return reject(err)
+                    }
+                    let filename = '//storage.googleapis.com/' + options.bucket + '/' + metadata.name
+                    console.log('File uploaded: ' + filename + "\n")
+                    return resolve(filename)
+                })
+            })
+        })
     }
 
     // middleware for serving the files
@@ -54,25 +53,24 @@ class GStore extends BaseStore {
 
     exists (filename) {
         return new Promise((resolve, reject) => {
-            this.bucket.file(filename).exists().then(function(data){
+            this.bucket.file(filename).exists((err, data) => {
+                if(err) {
+                    return reject(err);
+                }
                 return resolve(data[0]);
-            });
-        });
+            })
+        })
     }
 
     read (filename) {
-      var rs = this.bucket.file(filename).createReadStream(), contents = '';
       return new Promise(function (resolve, reject) {
-        rs.on('error', function(err){
-          return reject(err);
-        });
-        rs.on('data', function(data){
-          contents += data;
-        });
-        rs.on('end', function(){
-          return resolve(content);
-        });
-      });
+        this.bucket.file(filename).download((err, content) => {
+            if(err) {
+                return reject(err)
+            }
+            return resolve(content)
+        })
+      })
     }
 
     delete (filename) {

@@ -23,7 +23,7 @@ class GStore extends BaseStore {
 
         return new Promise((resolve, reject) => {
             var opts = {
-                destination: targetDir + '/' + this.getUniqueFileName(image, targetDir),
+                destination: targetDir + '/' + image.name,
                 metadata: {
                     cacheControl: `public, max-age=${this.maxAge}`
                 },
